@@ -3,8 +3,6 @@
 //Note: various console debugging messages intentionally kept in the code for learning purposes
 // This change fixes Defect 17
 //
-// Added to change schedule state
-//
 Ext.define('CustomApp', {
 	extend : 'Rally.app.App', // The parent class manages the app 'lifecycle' and calls launch() when ready
 	componentCls : 'app', // CSS styles found in app.css
