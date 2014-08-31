@@ -6,7 +6,17 @@ Ext.define('CustomApp', {
     extend: 'Rally.app.App',      // The parent class manages the app 'lifecycle' and calls launch() when ready
     componentCls: 'app',          // CSS styles found in app.css
 
-
+    items: [
+     {  // this container lets us control the layout of the pulldowns
+	 xtype: 'container',
+     itemId: 'pulldown-container',
+     layout: {
+             type: 'hbox',           // 'horizontal' layout
+             align: 'stretch'
+         } 
+     }
+            
+    ],
     defectStore: undefined,       // app level references to the store and grid for easy access in various methods
     defectGrid: undefined,
 
@@ -15,83 +25,78 @@ Ext.define('CustomApp', {
 
       console.log('our second app');     // see console api: https://developers.google.com/chrome-developer-tools/docs/console-api
 
-      this.pulldownContainer = Ext.create('Ext.container.Container', {    // this container lets us control the layout of the pulldowns; they'll be added below
-        id: 'pulldown-container-id',
-        layout: {
-                type: 'hbox',           // 'horizontal' layout
-                align: 'stretch'
-            }
-      });
-
-      this.add(this.pulldownContainer); // must add the pulldown container to the app to be part of the rendering lifecycle, even though it's empty at the moment
-
       this._loadIterations();
     },
 
-    // create iteration pulldown and load iterations
-    _loadIterations: function() {
-        this.iterComboBox = Ext.create('Rally.ui.combobox.IterationComboBox', {
-          fieldLabel: 'Iteration',
-          labelAlign: 'right',
-          width: 300,
-          listeners: {
-            ready: function(combobox) {             // on ready: during initialization of the app, once Iterations are loaded, lets go get Defect Severities
-                 this._loadSeverities();
-           },
-        select: function(combobox, records) {   // on select: after the app has fully loaded, when the user 'select's an iteration, lets just relaod the data
-                 this._loadData();
-           },
-           scope: this
-         }
-        });
-
-        this.pulldownContainer.add(this.iterComboBox);   // add the iteration list to the pulldown container so it lays out horiz, not the app!
-     },
-
     // create defect severity pulldown then load data
     _loadSeverities: function() {
-        this.severityComboBox = Ext.create('Rally.ui.combobox.FieldValueComboBox', {
+        var severityComboBox = Ext.create('Rally.ui.combobox.FieldValueComboBox', {
+          itemId: 'severity-combobox',
           model: 'Defect',
           field: 'Severity',
           fieldLabel: 'Severity',
           labelAlign: 'right',
           listeners: {
-            ready: function(combobox) {             // this is the last 'data' pulldown we're loading so both events go to just load the actual defect data
-                 this._loadData();
-           },
-            select: function(combobox, records) {
-                 this._loadData();
-           },
-           scope: this                              // <--- don't for get to pass the 'app' level scope into the combo box so the async event functions can call app-level func's!
+            ready: this._loadData,     // this is the last 'data' pulldown we're loading so both events go to just load the actual defect data
+            select: this._loadData,
+            scope: this                 // <--- don't for get to pass the 'app' level scope into the combo box so the async event functions can call app-level func's!
+         }       
+        });
+        
+        // this.pulldownContainer.add(this.severityComboBox);    // add the severity list to the pulldown container so it lays out horiz, not the app!
+        this.down('#pulldown-container').add(severityComboBox);        
+    },
+    // create iteration pulldown and load iterations
+    _loadIterations: function() {
+    	var me = this;
+    	console.log ('Got Me', me);
+    	
+        var iterComboBox = Ext.create('Rally.ui.combobox.IterationComboBox', {
+          itemId: 'iteration-combobox',
+          fieldLabel: 'Iteration',
+          labelAlign: 'right',
+          width: 300,
+          listeners: {
+        	  ready: me._loadSeverities, // on ready: during initialization of the app, once Iterations are loaded, lets go get Defect Severities
+        	  select: me._loadData,   // on select: after the app has fully loaded, when the user 'select's an iteration, lets just relaod the data
+              scope: me
          }
-
         });
 
-        this.pulldownContainer.add(this.severityComboBox);    // add the severity list to the pulldown container so it lays out horiz, not the app!
-     },
-
+        // this.pulldownContainer.add(this.iterComboBox);	// add the iteration list to the pulldown container so it lays out horiz, not the app!
+        this.down('#pulldown-container').add(iterComboBox);
+       
+    },
+   
+     // Construct filters for defects with Iteration and Severity
+    _getFilters: function(iterationValue, severityValue) {
+        var iterationFilter = Ext.create('Rally.data.wsapi.Filter', {
+      	     property: 'Iteration',
+      	     operator: '=',
+      	     value: iterationValue
+      	});
+        var severityFilter = Ext.create('Rally.data.wsapi.Filter', {
+                property: 'Severity',
+                operation: '=',
+                value: severityValue
+          });
+     
+        return iterationFilter.and(severityFilter);	
+    },
+     
     // Get data from Rally
     _loadData: function() {
 
-      var selectedIterRef = this.iterComboBox.getRecord().get('_ref');              // the _ref is unique, unlike the iteration name that can change; lets query on it instead!
-      var selectedSeverityValue = this.severityComboBox.getRecord().get('value');   // remember to console log the record to see the raw data and relize what you can pluck out
+     // var selectedIterRef = this.iterComboBox.getRecord().get('_ref');              // the _ref is unique, unlike the iteration name that can change; lets query on it instead!
+     var selectedIterRef = this.down('#iteration-combobox').getRecord().get('_ref');              // the _ref is unique, unlike the iteration name that can change; lets query on it instead!
+     // var selectedSeverityValue = this.severityComboBox.getRecord().get('value');   // remember to console log the record to see the raw data and relize what you can pluck out
+     var selectedSeverityValue = this.down('#severity-combobox').getRecord().get('value');   // remember to console log the record to see the raw data and relize what you can pluck out
 
-      console.log('selected iter', selectedIterRef);
-      console.log('selected severity', selectedSeverityValue);
+      var myFilters = this._getFilters(selectedIterRef,selectedSeverityValue);
 
-      var myFilters = [                   // in this format, these are AND'ed together; use Rally.data.wsapi.Filter to create programatic AND/OR constructs
-            {
-              property: 'Iteration',
-              operation: '=',
-              value: selectedIterRef
-            },
-            {
-              property: 'Severity',
-              operation: '=',
-              value: selectedSeverityValue
-            }
-          ];
-
+      console.log ('myFilters', myFilters.toString());
+      // console.log ('severity filter', severityFilter, severityFilter.toString());
+      
       // if store exists, just load new data
       if (this.defectStore) {
         console.log('store exists');

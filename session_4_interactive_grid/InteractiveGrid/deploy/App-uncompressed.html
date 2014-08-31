@@ -3,7 +3,7 @@
 <head>
     <title>InteractiveRallyGrid</title>
 
-    <script type="text/javascript" src="/apps/2.0rc2/sdk.js"></script>
+    <script type="text/javascript" src="/apps/2.0rc3/sdk.js"></script>
 
     <script type="text/javascript">
         Rally.onReady(function () {
@@ -88,19 +88,20 @@ Ext.define('CustomApp', {
       console.log('selected iter', selectedIterRef);
       console.log('selected severity', selectedSeverityValue);
 
-      var myFilters = [                   // in this format, these are AND'ed together; use Rally.data.wsapi.Filter to create programatic AND/OR constructs
-            {
-              property: 'Iteration',
-              operation: '=',
-              value: selectedIterRef
-            },
-            {
+      var iterationFilter = Ext.create('Rally.data.wsapi.Filter', {
+    	     property: 'Iteration',
+    	     operator: '=',
+    	     value: selectedIterRef
+    	});
+      var severityFilter = Ext.create('Rally.data.wsapi.Filter', {
               property: 'Severity',
               operation: '=',
               value: selectedSeverityValue
-            }
-          ];
+        });
 
+      console.log ('iteration filter', iterationFilter, iterationFilter.toString());
+      console.log ('severity filter', severityFilter, severityFilter.toString());
+      
       // if store exists, just load new data
       if (this.defectStore) {
         console.log('store exists');

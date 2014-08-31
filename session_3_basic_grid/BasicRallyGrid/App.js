@@ -18,7 +18,7 @@ Ext.define('CustomApp', {
 			layout : {
 				type : 'hbox',
 				align : 'stretch'
-			},
+			}
 
 		});
 		this.add(this.pulldownContainer);
