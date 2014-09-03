@@ -1,5 +1,5 @@
 {
-   "name": "InteractiveRallyGrid",
+   "name": "TS_by_TS",
    "className": "CustomApp",
    "server": "https://rally1.rallydev.com",
    "sdk": "2.0rc3",
