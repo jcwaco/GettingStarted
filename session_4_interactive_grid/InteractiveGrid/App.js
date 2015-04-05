@@ -1,6 +1,8 @@
 // Custom Rally App that displays Defects in a grid and filter by Iteration and/or Severity.
 //
 // Note: various console debugging messages intentionally kept in the code for learning purposes
+// THIS IS A TEST
+//
 
 Ext.define('CustomApp', {
     extend: 'Rally.app.App',      // The parent class manages the app 'lifecycle' and calls launch() when ready
